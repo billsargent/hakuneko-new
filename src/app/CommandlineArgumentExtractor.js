@@ -42,6 +42,7 @@ module.exports = class CommandlineArgumentExtractor {
         console.log(' ', '                           ', 'Default: system\'s default');
         console.log(' ', '--user-directory=<DIR>     ', 'Directory where user settings are stored');
         console.log(' ', '                           ', 'Default: system\'s default');
+        console.log(' ', '--disable-dev-tools        ', 'Disable Developer Tools (enabled by default)');
         console.log('');
     }
 
@@ -53,7 +54,8 @@ module.exports = class CommandlineArgumentExtractor {
             applicationUpdateURL:         this._get('--update-url') || this._get('-u'),
             applicationStartupURL:        this._get('--startup-url'),
             applicationCacheDirectory:    this._get('--cache-directory') || this._get('-c'),
-            applicationUserDataDirectory: this._get('--user-directory')
+            applicationUserDataDirectory: this._get('--user-directory'),
+            enableDevTools:               this._get('--disable-dev-tools', true) !== true // True by default, can be disabled
         };
     }
 };

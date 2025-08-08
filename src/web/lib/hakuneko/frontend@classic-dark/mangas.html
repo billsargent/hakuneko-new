@@ -91,9 +91,11 @@
                         Manga List
                     </td>
                     <td width="1">
-                        <input id="paste" />
-                        <i class="fas fa-fw fa-paste button" on-click="onPasteClick" title="Click to paste manga links from the clipboard (CTRL + V)"></i>
-                        <i class="fas fa-fw fa-download button" on-click="onDownloadAllMangasClick" title="Click to download all mangas currently shown in the filtered list, including all their chapters"></i>
+                        <span style="display: inline-block; white-space: nowrap;">
+                            <i class="fas fa-fw fa-download button" on-click="onDownloadAllMangasClick" title="Click to download all mangas currently shown in the filtered list, including all their chapters"></i>
+                            <input id="paste" />
+                            <i class="fas fa-fw fa-paste button" on-click="onPasteClick" title="Click to paste manga links from the clipboard (CTRL + V)"></i>
+                        </span>
                     </td>
                 </tr>
             </table>

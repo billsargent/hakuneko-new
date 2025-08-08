@@ -265,11 +265,17 @@ module.exports = class ElectronBootstrap {
             frame: true // Set to true to show the title bar and window controls
         });
 
-        // Initialize remote module
+        // Initialize remote module if available
         try {
-            require('electron').remote.initialize();
+            // In Electron 8.x, the remote module is available without initialization
+            // The initialize function is only needed in Electron 10+
+            // So we'll just check if the remote module is available
+            const remote = require('electron').remote;
+            if (!remote) {
+                this._logger.info('Remote module not available');
+            }
         } catch(error) {
-            this._logger.warn('Failed to initialize electron remote module:', error);
+            this._logger.warn('Failed to access electron remote module:', error);
             // Continue anyway, as we're using the standard window frame now
         }
 

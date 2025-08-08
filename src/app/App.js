@@ -89,8 +89,8 @@ module.exports = class App {
             await this._electron.loadURL(this._configuration.applicationStartupURL);
             this._logger.info('Application URL loaded');
             
-            // Enable developer tools by default for debugging
-            if (this._electron._window) {
+            // Enable developer tools (controlled by configuration)
+            if (this._electron._window && this._configuration.enableDevTools) {
                 this._logger.info('Opening developer tools for debugging');
                 this._electron._window.webContents.openDevTools();
             }

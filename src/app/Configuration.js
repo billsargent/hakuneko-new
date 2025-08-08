@@ -27,6 +27,7 @@ module.exports = class Configuration {
         this._applicationStartupURL = options['applicationStartupURL'] || 'hakuneko://cache/index.html';
         this._applicationCacheDirectory = options['applicationCacheDirectory'] || path.join(applicationExecutableDirectory, 'cache');
         this._applicationUserDataDirectory = options['applicationUserDataDirectory'] || path.join(applicationExecutableDirectory, 'userdata');
+        this._enableDevTools = options['enableDevTools'] !== undefined ? options['enableDevTools'] : true; // Enabled by default
     }
 
     printInfo() {
@@ -78,6 +79,10 @@ module.exports = class Configuration {
 
     get applicationUserPluginsDirectory() {
         return path.join(this.applicationUserDataDirectory, 'hakuneko.plugins');
+    }
+
+    get enableDevTools() {
+        return this._enableDevTools;
     }
 
     _absolute(endpoint) {

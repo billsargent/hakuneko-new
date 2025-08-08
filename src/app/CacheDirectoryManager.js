@@ -59,7 +59,45 @@ module.exports = class CacheDirectoryManager {
     async applyUpdateArchive(version, data) {
         let zip = new jszip();
         let archive = await zip.loadAsync(data, {});
-        await fs.remove(this._applicationCacheDirectory);
+        
+        // Safely remove directory with fallback mechanism
+        try {
+            // In Node.js 12.x, fs-extra's remove method should be used instead of fs.rm
+            // fs.remove() should work in all fs-extra versions
+            if (typeof fs.remove === 'function') {
+                await fs.remove(this._applicationCacheDirectory);
+            } else {
+                // Fallback if fs.remove is not a function for some reason
+                this._logger.warn('fs.remove function not found, using alternative removal method');
+                throw new Error('fs.remove function not available');
+            }
+        } catch (error) {
+            // Fallback to manual recursive deletion if fs.remove fails
+            this._logger.warn('Failed to remove directory using fs.remove:', error);
+            try {
+                // Alternative implementation using rimraf-like approach
+                const rimraf = util => {
+                    if (fs.existsSync(util)) {
+                        fs.readdirSync(util).forEach(file => {
+                            const curPath = path.join(util, file);
+                            if (fs.lstatSync(curPath).isDirectory()) {
+                                rimraf(curPath);
+                            } else {
+                                fs.unlinkSync(curPath);
+                            }
+                        });
+                        fs.rmdirSync(util);
+                    }
+                };
+                rimraf(this._applicationCacheDirectory);
+            } catch (e) {
+                this._logger.error('Failed to remove directory using fallback method:', e);
+            }
+        }
+        
+        // Ensure directory exists before extracting
+        await fs.ensureDir(this._applicationCacheDirectory);
+        
         let entries = Object.keys(archive.files);
         let promises = entries.map(entry => this._extractZipEntry(archive, this._applicationCacheDirectory, entry));
         await Promise.all(promises);
