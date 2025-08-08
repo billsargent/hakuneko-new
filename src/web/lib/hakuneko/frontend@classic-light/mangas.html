@@ -92,6 +92,7 @@
                     </td>
                     <td width="1">
                         <span style="display: inline-block; white-space: nowrap;">
+                            <i class="fas fa-fw fa-globe button" on-click="onOpenConnectorWebsiteClick" title="Open the website of the current connector in a new window to handle Cloudflare authentication"></i>
                             <i class="fas fa-fw fa-download button" on-click="onDownloadAllMangasClick" title="Click to download all mangas currently shown in the filtered list, including all their chapters"></i>
                             <input id="paste" />
                             <i class="fas fa-fw fa-paste button" on-click="onPasteClick" title="Click to paste manga links from the clipboard (CTRL + V)"></i>
@@ -341,6 +342,54 @@
                 if(true/*clipboard seems to have valid manga links*/) {
                     this.set('selectedConnector', clipboardConnector);
                     this.onUpdateMangaListClick(evt);
+                }
+            }
+
+            /**
+             * Opens the website of the current connector in a new window to handle Cloudflare authentication
+             */
+            onOpenConnectorWebsiteClick(evt) {
+                if (!this.selectedConnector) {
+                    alert('No connector selected!');
+                    return;
+                }
+
+                // Special handling for bookmarks and clipboard connectors
+                if (this.selectedConnector.id === this.bookmarkConnectorID || this.selectedConnector.id === 'clipboard') {
+                    alert('This connector does not have a website to open.');
+                    return;
+                }
+
+                // Get the base URL of the connector
+                let url = '';
+                try {
+                    // Most connectors should have a baseURL
+                    if (this.selectedConnector.baseURL) {
+                        url = this.selectedConnector.baseURL;
+                    }
+                    // As a fallback, try to use the URI from the first manga if available
+                    else if (this.mangaList && this.mangaList.length > 0 && this.mangaList[0].uri) {
+                        // Extract domain from URI
+                        let uri = this.mangaList[0].uri;
+                        let match = uri.match(/^(?:https?:\/\/)?([^\/]+)/i);
+                        if (match && match[0]) {
+                            url = match[0];
+                        }
+                    }
+
+                    if (!url) {
+                        throw new Error('Could not determine website URL for this connector.');
+                    }
+
+                    // Ensure URL has a protocol
+                    if (!url.startsWith('http')) {
+                        url = 'https://' + url;
+                    }
+
+                    // Open in a new window
+                    window.open(url, '_blank');
+                } catch (error) {
+                    alert('Error opening website: ' + error.message);
                 }
             }
 
