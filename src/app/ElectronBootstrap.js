@@ -258,15 +258,25 @@ module.exports = class ElectronBootstrap {
             webPreferences: {
                 experimentalFeatures: true,
                 nodeIntegration: true,
+                contextIsolation: false, // Required for older Electron versions
+                enableRemoteModule: true, // Enable remote module explicitly
                 webSecurity: false // required to open local images in browser
             },
-            frame: false
+            frame: true // Set to true to show the title bar and window controls
         });
+
+        // Initialize remote module
+        try {
+            require('electron').remote.initialize();
+        } catch(error) {
+            this._logger.warn('Failed to initialize electron remote module:', error);
+            // Continue anyway, as we're using the standard window frame now
+        }
 
         this._setupBeforeSendHeaders();
         this._setupHeadersReceived();
         this._setupTray(this._showTray);
-        this._window.setMenuBarVisibility(false);
+        this._window.setMenuBarVisibility(true); // Show menu bar to ensure users can access standard controls
         this._window.once('ready-to-show', () => this._window.show());
         this._window.on('close', this._mainWindowCloseHandler.bind(this));
         this._window.on('closed', this._mainWindowClosedHandler.bind(this));

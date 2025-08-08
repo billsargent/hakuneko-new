@@ -93,6 +93,7 @@
                     <td width="1">
                         <input id="paste" />
                         <i class="fas fa-fw fa-paste button" on-click="onPasteClick" title="Click to paste manga links from the clipboard (CTRL + V)"></i>
+                        <i class="fas fa-fw fa-download button" on-click="onDownloadAllMangasClick" title="Click to download all mangas currently shown in the filtered list, including all their chapters"></i>
                     </td>
                 </tr>
             </table>
@@ -339,6 +340,65 @@
                     this.set('selectedConnector', clipboardConnector);
                     this.onUpdateMangaListClick(evt);
                 }
+            }
+
+            /**
+             * Download all mangas currently shown in the filtered list, including all their chapters
+             */
+            async onDownloadAllMangasClick(evt) {
+                // Get all currently displayed mangas (filtered)
+                let filteredMangas = [];
+                const allMangas = this.mangaList || [];
+                
+                // Apply the filter function to get the currently displayed mangas
+                if (this.mangaPattern && this.mangaPattern.length >= 3) {
+                    const filterFunction = this.filterMangas(this.mangaPattern);
+                    filteredMangas = allMangas.filter(filterFunction);
+                } else {
+                    filteredMangas = allMangas.slice();
+                }
+
+                // Check if there are mangas to download
+                if (filteredMangas.length === 0) {
+                    await alert('No mangas found in the current view.');
+                    return;
+                }
+
+                // Confirm with user
+                if (!await confirm(`Download ALL chapters from ${filteredMangas.length} manga(s)?\n\nThis will add all available chapters to the download queue.\nDepending on the number of mangas, this operation may take some time.`)) {
+                    return;
+                }
+
+                // Add status message
+                const statusID = this.$.status.addToQueue(`Processing ${filteredMangas.length} manga(s) for download...`);
+                
+                // Process each manga
+                let totalChapters = 0;
+                for (let manga of filteredMangas) {
+                    // Load chapters for this manga
+                    await new Promise((resolve) => {
+                        this.$.status.addToQueue(`Loading chapters for: ${manga.title}`);
+                        manga.getChapters((error, chapters) => {
+                            if (!error && chapters) {
+                                // Filter only available chapters
+                                const availableChapters = chapters.filter(chapter => chapter.status === 'available');
+                                
+                                // Add chapters to download queue
+                                availableChapters.forEach(chapter => {
+                                    Engine.DownloadManager.addDownload(chapter);
+                                    totalChapters++;
+                                });
+                            }
+                            resolve();
+                        });
+                    });
+                }
+
+                // Remove status message
+                this.$.status.removeFromQueue(statusID);
+                
+                // Show completion message
+                await alert(`Added ${totalChapters} chapters from ${filteredMangas.length} manga(s) to download queue.`);
             }
         }
         window.customElements.define( HakunekoMangas.is, HakunekoMangas );

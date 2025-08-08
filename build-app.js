@@ -587,7 +587,7 @@ class ElectronPackagerWindows extends ElectronPackager {
     async buildIS(architecture) {
         this._architecture = this.architectures[architecture].is;
 
-        await this._validateCommands('7z --help', 'asar --version', 'innosetup-compiler /?');
+        await this._validateCommands('7z --help', 'asar --version');
 
         await fs.remove(this._dirBuildRoot);
         await this._bundleElectron(false);
@@ -595,6 +595,12 @@ class ElectronPackagerWindows extends ElectronPackager {
         await this._bundleImageMagick(this._architecture.name);
         await this._bundleKindleGenerate(this._architecture.name);
         await this._editResource();
+        
+        // Copy web build to cache directory
+        console.log('Copying web build to cache directory...');
+        const cachePath = path.join(this._dirBuildRoot, 'cache');
+        await fs.ensureDir(cachePath);
+        await fs.copy(path.join(process.cwd(), 'build', 'web'), cachePath);
         let setup = this._createScriptIS(architecture === '64');
 
         await this._executeCommand(`innosetup-compiler "${setup}"`);
@@ -616,6 +622,12 @@ class ElectronPackagerWindows extends ElectronPackager {
         await this._bundleImageMagick(this._architecture.name);
         await this._bundleKindleGenerate(this._architecture.name);
         await this._editResource();
+        
+        // Copy web build to cache directory
+        console.log('Copying web build to cache directory...');
+        const cachePath = path.join(this._dirBuildRoot, 'cache');
+        await fs.ensureDir(cachePath);
+        await fs.copy(path.join(process.cwd(), 'build', 'web'), cachePath);
 
         let zip = this._dirBuildRoot + '.zip';
         await fs.remove(zip);
@@ -881,11 +893,13 @@ class ElectronPackagerDarwin extends ElectronPackager {
 async function main() {
     if(process.platform === 'win32') {
         let packager = new ElectronPackagerWindows(config);
-        await packager.buildIS('64');
-        await packager.buildIS('32');
-        await packager.buildZIP('64');
-        await packager.buildZIP('32');
+        // Commented out to only build amd64 portable
+        // await packager.buildIS('64');
+        // await packager.buildIS('32');
+        await packager.buildZIP('64'); // amd64 portable build
+        // await packager.buildZIP('32');
     }
+    /* Commented out non-Windows builds
     if(process.platform === 'linux') {
         let packager = new ElectronPackagerLinux(config);
         await packager.buildDEB('64');
@@ -900,6 +914,7 @@ async function main() {
         let packager = new ElectronPackagerDarwin(config);
         await packager.buildDMG('64');
     }
+    */
 }
 
 // exit application as soon as any uncaught exception is thrown

@@ -15,30 +15,93 @@
     <script src="./js/sql.min.js" defer></script>
     <script src="./js/exif-js.min.js" defer></script>
     <script type="module">
-        const electronDialog = require('electron').remote.dialog
+        // Add error handling for the entire script
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error('Global error:', message, 'at', source, lineno, colno, error);
+            document.body.innerHTML = `
+                <div style="padding: 20px; font-family: Arial, sans-serif;">
+                    <h2>Error Loading HakuNeko</h2>
+                    <p>An error occurred while loading the application:</p>
+                    <pre style="background: #f0f0f0; padding: 10px; overflow: auto;">${message}\nAt: ${source}:${lineno}:${colno}</pre>
+                    <p>Please check the console for more details (F12).</p>
+                </div>
+            `;
+            return true;
+        };
+
+        // Handle remote module compatibility
+        let electronDialog;
+        try {
+            // Try to get the dialog from the new @electron/remote module first
+            const remote = require('@electron/remote');
+            electronDialog = remote.dialog;
+            console.log('Using @electron/remote module for dialog');
+        } catch (e) {
+            try {
+                // Fall back to the old electron.remote
+                const electron = require('electron');
+                electronDialog = electron.remote ? electron.remote.dialog : null;
+                console.log('Using electron.remote module for dialog');
+            } catch (e2) {
+                console.error('Failed to load remote module:', e2);
+                // Set a fallback for dialog operations
+                electronDialog = {
+                    showMessageBox: (options) => {
+                        console.log('Dialog operation attempted but no dialog module available:', options);
+                        return Promise.resolve({ response: 0 });
+                    }
+                };
+            }
+        }
+        
         import HakuNeko from './mjs/HakuNeko.mjs'
 
         // https://github.com/electron/electron/blob/master/docs/api/dialog.md#dialogshowmessageboxbrowserwindow-options
         function replaceDialogs() {
             alert = async (message, title, type) => {
+                console.log('Alert:', message);
+                if (!electronDialog) {
+                    console.warn('No dialog module available for alert');
+                    window.alert(message);
+                    return true;
+                }
+                
                 let options = {
                     type: type || 'info',
                     title: title || 'HakuNeko',
                     message: message,
                     buttons: [ 'OK' ]
                 };
-                let response = await electronDialog.showMessageBox(options);
-                return response === options.buttons.indexOf('OK');
+                try {
+                    let response = await electronDialog.showMessageBox(options);
+                    return response === options.buttons.indexOf('OK') || response.response === 0;
+                } catch (error) {
+                    console.error('Error showing message box:', error);
+                    window.alert(message);
+                    return true;
+                }
             };
+            
             confirm = async (message, title, type, buttons) => {
+                console.log('Confirm:', message);
+                if (!electronDialog) {
+                    console.warn('No dialog module available for confirm');
+                    return window.confirm(message);
+                }
+                
                 let options = {
                     type: type || 'question',
                     title: title || 'HakuNeko',
                     message: message,
                     buttons: buttons || [ 'Yes', 'No' ]
                 };
-                let response = await electronDialog.showMessageBox(options);
-                return response.response === 0;
+                try {
+                    let response = await electronDialog.showMessageBox(options);
+                    return response.response === 0;
+                } catch (error) {
+                    console.error('Error showing confirmation box:', error);
+                    return window.confirm(message);
+                }
             };
         }
 
@@ -83,9 +146,27 @@
         }
 
         async function main() {
-            replaceDialogs();
-            await loadEngine();
-            loadFrontend();
+            console.log('Starting HakuNeko...');
+            try {
+                replaceDialogs();
+                console.log('Dialogs replaced');
+                
+                await loadEngine();
+                console.log('Engine loaded');
+                
+                loadFrontend();
+                console.log('Frontend loaded');
+            } catch (error) {
+                console.error('Error in main:', error);
+                document.body.innerHTML = `
+                    <div style="padding: 20px; font-family: Arial, sans-serif;">
+                        <h2>Failed to Initialize HakuNeko</h2>
+                        <p>An error occurred while initializing the application:</p>
+                        <pre style="background: #f0f0f0; padding: 10px; overflow: auto;">${error.message}\n${error.stack}</pre>
+                        <p>Please check the console for more details (F12).</p>
+                    </div>
+                `;
+            }
         }
 
         main();
