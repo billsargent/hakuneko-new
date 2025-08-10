@@ -59,7 +59,7 @@ module.exports = class CacheDirectoryManager {
     async applyUpdateArchive(version, data) {
         let zip = new jszip();
         let archive = await zip.loadAsync(data, {});
-        
+
         // Safely remove directory with fallback mechanism
         try {
             // In Node.js 12.x, fs-extra's remove method should be used instead of fs.rm
@@ -94,10 +94,10 @@ module.exports = class CacheDirectoryManager {
                 this._logger.error('Failed to remove directory using fallback method:', e);
             }
         }
-        
+
         // Ensure directory exists before extracting
         await fs.ensureDir(this._applicationCacheDirectory);
-        
+
         let entries = Object.keys(archive.files);
         let promises = entries.map(entry => this._extractZipEntry(archive, this._applicationCacheDirectory, entry));
         await Promise.all(promises);
