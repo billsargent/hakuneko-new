@@ -62,11 +62,11 @@ module.exports = class App {
             this._extractor.printInfo();
             this.printInfo();
             this._configuration.printInfo();
-            
+
             // add HakuNeko's application directory to the environment variable path (make ffmpeg available on windows)
             process.env.PATH = path.dirname(process.execPath) + (process.platform === 'win32' ? ';' : ':') + process.env.PATH;
             this._logger.info('Updated PATH:', process.env.PATH);
-            
+
             // add HakuNeko's portable mode as environment variable to be easily available in render process
             if(Configuration.isPortableMode) {
                 process.env.HAKUNEKO_PORTABLE = 'TRUE';
@@ -75,20 +75,20 @@ module.exports = class App {
                 delete process.env.HAKUNEKO_PORTABLE;
                 this._logger.info('Running in standard mode');
             }
-            
+
             this._logger.info('Launching electron window...');
             await this._electron.launch();
-            
+
             this._logger.info('Loading initial HTML...');
             await this._electron.loadHTML(loadingPage);
-            
+
             this._logger.info('Updating cache...');
             await this._updater.updateCache(this._configuration.publicKey);
-            
+
             this._logger.info('Loading application URL:', this._configuration.applicationStartupURL);
             await this._electron.loadURL(this._configuration.applicationStartupURL);
             this._logger.info('Application URL loaded');
-            
+
             // Enable developer tools (controlled by configuration)
             if (this._electron._window && this._configuration.enableDevTools) {
                 this._logger.info('Opening developer tools for debugging');
