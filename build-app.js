@@ -524,6 +524,36 @@ class ElectronPackagerLinux extends ElectronPackager {
 class ElectronPackagerWindows extends ElectronPackager {
 
     /**
+     * Apply custom UI changes to the cache directory
+     * @param {string} cachePath - Path to the cache directory
+     */
+    async _applyCustomUIChanges(cachePath) {
+        try {
+            // Define the files to copy
+            const files = [
+                {
+                    source: path.join(process.cwd(), 'src', 'web', 'lib', 'hakuneko', 'frontend@classic-dark', 'mangas.html'),
+                    target: path.join(cachePath, 'lib', 'hakuneko', 'frontend@classic-dark', 'mangas.html')
+                },
+                {
+                    source: path.join(process.cwd(), 'src', 'web', 'lib', 'hakuneko', 'frontend@classic-light', 'mangas.html'),
+                    target: path.join(cachePath, 'lib', 'hakuneko', 'frontend@classic-light', 'mangas.html')
+                }
+            ];
+            
+            // Copy each file
+            for (const file of files) {
+                console.log(`Copying custom file: ${file.source} => ${file.target}`);
+                await fs.copy(file.source, file.target, { overwrite: true });
+            }
+            console.log('All custom UI changes applied successfully.');
+        } catch (error) {
+            console.error('Error applying custom UI changes:', error);
+            throw error; // Re-throw to ensure the build process stops if customization fails
+        }
+    }
+
+    /**
      *
      */
     constructor(configuration) {
@@ -628,6 +658,10 @@ class ElectronPackagerWindows extends ElectronPackager {
         const cachePath = path.join(this._dirBuildRoot, 'cache');
         await fs.ensureDir(cachePath);
         await fs.copy(path.join(process.cwd(), 'build', 'web'), cachePath);
+        
+        // Apply custom UI changes to cache directory
+        console.log('Applying custom UI changes...');
+        await this._applyCustomUIChanges(cachePath);
 
         let zip = this._dirBuildRoot + '.zip';
         await fs.remove(zip);

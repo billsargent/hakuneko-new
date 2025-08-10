@@ -57,6 +57,33 @@ module.exports = class ElectronBootstrap {
          *       This has to be done, because F12 key cannot be used as global key in windows
          */
         this._registerLocalHotkeys();
+        
+        // Register IPC handler for setting cookies
+        electron.ipcMain.handle('set-cookie', async (event, cookieDetails) => {
+            try {
+                // Validate the cookie details
+                if (!cookieDetails || !cookieDetails.url || !cookieDetails.name || !cookieDetails.value) {
+                    throw new Error('Invalid cookie details provided');
+                }
+                
+                // Get the session from the sender
+                const session = event.sender.session;
+                
+                // Set the cookie
+                await session.cookies.set({
+                    url: cookieDetails.url,
+                    name: cookieDetails.name,
+                    value: cookieDetails.value,
+                    domain: cookieDetails.domain || null
+                });
+                
+                console.log(`Cookie set successfully: ${cookieDetails.name} for domain ${cookieDetails.domain || 'default'}`);
+                return { success: true };
+            } catch (error) {
+                console.error('Error setting cookie via IPC:', error);
+                return { success: false, error: error.message };
+            }
+        });
 
         return new Promise(resolve => {
             electron.app.on('ready', () => {

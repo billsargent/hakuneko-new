@@ -1,0 +1,149 @@
+            /**
+             * Extracts cookies from clipboard text and imports them into Electron's session
+             * This is useful for getting Cloudflare cookies (especially cf_clearance) from the system browser
+             */
+            async _importCookiesFromClipboard(url) {
+                try {
+                    // Create instructions for the user
+                    let instructions = 
+                        "Please follow these steps to import cookies:\n\n" +
+                        "1. In your browser, navigate to the website you just visited\n" +
+                        "2. Open browser DevTools (F12 or right-click > Inspect)\n" +
+                        "3. Go to the 'Application' tab (Chrome) or 'Storage' tab (Firefox)\n" +
+                        "4. Under 'Storage', expand 'Cookies' and click on the website\n" +
+                        "5. Find the 'cf_clearance' cookie (needed for Cloudflare protection)\n" +
+                        "6. Copy its value (we'll use it in the next step)";
+                    
+                    // Get domain from URL for cookie setting
+                    const domain = new URL(url).hostname;
+                    
+                    // Show the instructions
+                    await alert(instructions);
+                    
+                    // Use an input dialog via an overlay element
+                    // Create a modal dialog with inputs
+                    let overlay = document.createElement('div');
+                    overlay.style.position = 'fixed';
+                    overlay.style.top = '0';
+                    overlay.style.left = '0';
+                    overlay.style.width = '100%';
+                    overlay.style.height = '100%';
+                    overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                    overlay.style.zIndex = '9999';
+                    overlay.style.display = 'flex';
+                    overlay.style.justifyContent = 'center';
+                    overlay.style.alignItems = 'center';
+                    
+                    let dialog = document.createElement('div');
+                    dialog.style.backgroundColor = '#fff';
+                    dialog.style.padding = '20px';
+                    dialog.style.borderRadius = '5px';
+                    dialog.style.maxWidth = '500px';
+                    dialog.style.width = '80%';
+                    
+                    let heading = document.createElement('h3');
+                    heading.textContent = 'Import Cookie';
+                    heading.style.marginTop = '0';
+                    
+                    let nameLabel = document.createElement('div');
+                    nameLabel.textContent = 'Cookie Name:';
+                    
+                    let nameInput = document.createElement('input');
+                    nameInput.type = 'text';
+                    nameInput.value = 'cf_clearance';
+                    nameInput.style.width = '100%';
+                    nameInput.style.marginBottom = '10px';
+                    nameInput.style.boxSizing = 'border-box';
+                    
+                    let valueLabel = document.createElement('div');
+                    valueLabel.textContent = 'Cookie Value:';
+                    
+                    let valueInput = document.createElement('input');
+                    valueInput.type = 'text';
+                    valueInput.placeholder = 'Paste the cookie value here';
+                    valueInput.style.width = '100%';
+                    valueInput.style.marginBottom = '20px';
+                    valueInput.style.boxSizing = 'border-box';
+                    
+                    let buttonContainer = document.createElement('div');
+                    buttonContainer.style.display = 'flex';
+                    buttonContainer.style.justifyContent = 'flex-end';
+                    
+                    let cancelButton = document.createElement('button');
+                    cancelButton.textContent = 'Cancel';
+                    cancelButton.style.marginRight = '10px';
+                    
+                    let saveButton = document.createElement('button');
+                    saveButton.textContent = 'Save';
+                    
+                    buttonContainer.appendChild(cancelButton);
+                    buttonContainer.appendChild(saveButton);
+                    
+                    dialog.appendChild(heading);
+                    dialog.appendChild(nameLabel);
+                    dialog.appendChild(nameInput);
+                    dialog.appendChild(valueLabel);
+                    dialog.appendChild(valueInput);
+                    dialog.appendChild(buttonContainer);
+                    
+                    overlay.appendChild(dialog);
+                    document.body.appendChild(overlay);
+                    
+                    // Focus the value input for easy pasting
+                    valueInput.focus();
+                    
+                    // Return a promise that resolves when user submits the form
+                    let cookieName, cookieValue;
+                    
+                    await new Promise((resolve, reject) => {
+                        cancelButton.addEventListener('click', () => {
+                            document.body.removeChild(overlay);
+                            reject(new Error('Cookie import cancelled'));
+                        });
+                        
+                        saveButton.addEventListener('click', () => {
+                            cookieName = nameInput.value.trim();
+                            cookieValue = valueInput.value.trim();
+                            
+                            if (!cookieName) {
+                                alert('Please enter a cookie name');
+                                return;
+                            }
+                            
+                            if (!cookieValue) {
+                                alert('Please enter a cookie value');
+                                return;
+                            }
+                            
+                            document.body.removeChild(overlay);
+                            resolve();
+                        });
+                    });
+                    
+                    // Set the cookie in Electron's session
+                    if (window.electron && window.electron.remote) {
+                        // For newer Electron versions
+                        const session = window.electron.remote.session.defaultSession;
+                        await session.cookies.set({
+                            url: url,
+                            name: cookieName,
+                            value: cookieValue,
+                            domain: domain
+                        });
+                    } else if (window.require) {
+                        // For older Electron versions
+                        const { remote } = window.require('electron');
+                        await remote.session.defaultSession.cookies.set({
+                            url: url,
+                            name: cookieName,
+                            value: cookieValue,
+                            domain: domain
+                        });
+                    }
+                    
+                    alert(`Cookie '${cookieName}' has been imported for ${domain}.\nTry accessing the website connector now.`);
+                } catch (error) {
+                    console.error('Failed to import cookies:', error);
+                    alert('Error importing cookies: ' + error.message);
+                }
+            }
