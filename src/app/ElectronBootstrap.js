@@ -257,8 +257,8 @@ module.exports = class ElectronBootstrap {
             backgroundColor: '#f8f8f8',
             webPreferences: {
                 experimentalFeatures: true,
-                nodeIntegration: true,
-                contextIsolation: false, // Required for app to work with current architecture
+                nodeIntegration: false, // More secure, use preload instead
+                contextIsolation: true, // Enable context isolation for security
                 webSecurity: false, // required to open local images in browser
                 sandbox: false, // Disable sandbox for compatibility
                 allowRunningInsecureContent: true, // Allow loading of insecure content

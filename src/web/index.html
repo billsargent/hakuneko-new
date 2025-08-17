@@ -172,22 +172,25 @@
         main();
     </script>
     <script>
-        this.win=require('electron').remote.getCurrentWindow();
+        // Use the remote module exposed by our preload script
+        const win = window.remote ? window.remote.getCurrentWindow() : 
+                   (window.electronAPI ? window.electronAPI.getCurrentWindow() : null);
 
         function minimizeWindow(){
-            this.win.minimize();
+            if (win) win.minimize();
         }
 
         function maximizeWindow(){
-            if (! this.win.isMaximized()) {
-                this.win.maximize();
+            if (!win) return;
+            if (!win.isMaximized()) {
+                win.maximize();
             } else {
-                this.win.unmaximize();
+                win.unmaximize();
             }
         }
 
         function closeWindow(){
-            this.win.close();
+            if (win) win.close();
         }
     </script>
     <style>
