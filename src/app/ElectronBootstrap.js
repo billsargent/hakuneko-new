@@ -258,24 +258,30 @@ module.exports = class ElectronBootstrap {
             webPreferences: {
                 experimentalFeatures: true,
                 nodeIntegration: true,
-                contextIsolation: false, // Required for older Electron versions
-                enableRemoteModule: true, // Enable remote module explicitly
-                webSecurity: false // required to open local images in browser
+                contextIsolation: false, // Required for app to work with current architecture
+                webSecurity: false, // required to open local images in browser
+                sandbox: false, // Disable sandbox for compatibility
+                allowRunningInsecureContent: true, // Allow loading of insecure content
+                preload: path.join(__dirname, 'preload.js') // Add preload script
             },
             frame: true // Set to true to show the title bar and window controls
         });
 
-        // Initialize remote module if available
+        // In Electron 27+, the remote module is no longer included by default
+        // Instead, we should use IPC or the @electron/remote package if needed
         try {
-            // In Electron 8.x, the remote module is available without initialization
-            // The initialize function is only needed in Electron 10+
-            // So we'll just check if the remote module is available
-            const remote = require('electron').remote;
-            if (!remote) {
-                this._logger.info('Remote module not available');
+            // Import @electron/remote conditionally if available
+            try {
+                const remoteModule = require('@electron/remote/main');
+                remoteModule.initialize();
+                remoteModule.enable(this._window.webContents);
+                this._logger.info('Remote module initialized via @electron/remote');
+            } catch(moduleError) {
+                // @electron/remote package not installed, falling back to direct IPC
+                this._logger.info('Remote module not available, using IPC instead');
             }
         } catch(error) {
-            this._logger.warn('Failed to access electron remote module:', error);
+            this._logger.warn('Failed to initialize remote functionality:', error);
             // Continue anyway, as we're using the standard window frame now
         }
 
